@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Filtro de Dados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .filter-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .table th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 1;
+            font-weight: bold;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .table thead th {
+            font-weight: bold !important;
+            background-color: #343a40 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Sistema de Filtro de Dados</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="uploadNavLink">Upload de Dados</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="consultaNavLink">Consulta de Dados</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-3">
+        <!-- Upload Page -->
+        <div id="uploadPage" class="page active">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Upload de Arquivo Excel</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <p class="lead">Bem-vindo ao Sistema de Filtro de Dados</p>
+                                <p>Este sistema permite carregar arquivos Excel e filtrar os dados por diversos critérios. Para começar, selecione um arquivo Excel (.xlsx ou .xls) e clique em "Carregar Dados".</p>
+                            </div>
+                            <div class="mb-3">
+                                <label for="excelFile" class="form-label">Selecione o arquivo Excel (.xlsx, .xls)</label>
+                                <input class="form-control form-control-lg" type="file" id="excelFile" accept=".xlsx, .xls">
+                            </div>
+                            <button id="uploadBtn" class="btn btn-primary btn-lg">
+                                <i class="bi bi-upload"></i> Carregar Dados
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consulta Page -->
+        <div id="consultaPage" class="page">
+            <h2 class="mb-4">Consulta de Dados</h2>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h4 class="mb-3"><i class="bi bi-funnel"></i> Filtros</h4>
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <label for="cidadeFilter" class="form-label">Cidade</label>
+                        <select class="form-select" id="cidadeFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="codVendFilter" class="form-label">Código Vendedor</label>
+                        <select class="form-select" id="codVendFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="vendedorFilter" class="form-label">Vendedor</label>
+                        <select class="form-select" id="vendedorFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="canalFilter" class="form-label">Canal</label>
+                        <select class="form-select" id="canalFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="pracaFilter" class="form-label">Praça</label>
+                        <select class="form-select" id="pracaFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="carregamentoFilter" class="form-label">Dia de Carregamento</label>
+                        <select class="form-select" id="carregamentoFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="filialFilter" class="form-label">Filial</label>
+                        <select class="form-select" id="filialFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12 mt-2">
+                        <button id="aplicarFiltroBtn" class="btn btn-success me-2">
+                            <i class="bi bi-funnel"></i> Aplicar Filtros
+                        </button>
+                        <button id="limparFiltrosBtn" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+                    <h4 class="mb-0">Resultados</h4>
+                    <div>
+                        <span id="contadorRegistros" class="badge bg-primary me-2">0 registros</span>
+                        <button id="exportarBtn" class="btn btn-sm btn-success" disabled>
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table id="dataTable" class="table table-striped table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>CIDADE</th>
+                                    <th>COD_VEND</th>
+                                    <th>VENDEDOR</th>
+                                    <th>CANAL</th>
+                                    <th>PRACA</th>
+                                    <th>DIA DE CARREGAMENTO</th>
+                                    <th>FILIAL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Nenhum dado carregado. Faça upload de um arquivo Excel primeiro.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Data Alert -->
+    <div id="noDataAlert" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none; position: fixed; top: 70px; right: 20px; z-index: 9999;">
+        <strong>Atenção!</strong> Nenhum dado disponível para consulta. Por favor, faça upload de um arquivo Excel primeiro.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2">Processando, por favor aguarde...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Global variables
+            let excelData = [];
+            let filteredData = [];
+            let dataLoaded = false;
+            
+            // DOM elements - Pages
+            const uploadPage = document.getElementById('uploadPage');
+            const consultaPage = document.getElementById('consultaPage');
+            const uploadNavLink = document.getElementById('uploadNavLink');
+            const consultaNavLink = document.getElementById('consultaNavLink');
+            
+            // DOM elements - Upload
+            const uploadBtn = document.getElementById('uploadBtn');
+            const excelFile = document.getElementById('excelFile');
+            const noDataAlert = document.getElementById('noDataAlert');
+            
+            // DOM elements - Consulta
+            const tableBody = document.getElementById('tableBody');
+            const loading = document.getElementById('loading');
+            const contadorRegistros = document.getElementById('contadorRegistros');
+            const exportarBtn = document.getElementById('exportarBtn');
+            const aplicarFiltroBtn = document.getElementById('aplicarFiltroBtn');
+            const limparFiltrosBtn = document.getElementById('limparFiltrosBtn');
+            
+            // Filter elements
+            const cidadeFilter = document.getElementById('cidadeFilter');
+            const codVendFilter = document.getElementById('codVendFilter');
+            const vendedorFilter = document.getElementById('vendedorFilter');
+            const canalFilter = document.getElementById('canalFilter');
+            const pracaFilter = document.getElementById('pracaFilter');
+            const carregamentoFilter = document.getElementById('carregamentoFilter');
+            const filialFilter = document.getElementById('filialFilter');
+            
+            // Event listeners - Navigation
+            uploadNavLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage(uploadPage);
+            });
+            
+            consultaNavLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!dataLoaded) {
+                    noDataAlert.style.display = 'block';
+                    setTimeout(() => {
+                        noDataAlert.style.display = 'none';
+                    }, 3000);
+                    return;
+                }
+                showPage(consultaPage);
+            });
+            
+            // Event listeners - Functions
+            uploadBtn.addEventListener('click', handleFileUpload);
+            aplicarFiltroBtn.addEventListener('click', applyFilters);
+            limparFiltrosBtn.addEventListener('click', clearFilters);
+            exportarBtn.addEventListener('click', exportToExcel);
+            
+            // Functions - Navigation
+            function showPage(page) {
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(p => {
+                    p.classList.remove('active');
+                });
+                
+                // Show selected page
+                page.classList.add('active');
+                
+                // Update active nav link
+                if (page === uploadPage) {
+                    uploadNavLink.classList.add('active');
+                    consultaNavLink.classList.remove('active');
+                } else {
+                    uploadNavLink.classList.remove('active');
+                    consultaNavLink.classList.add('active');
+                }
+            }
+            
+            // Functions - Data Handling
+            function handleFileUpload() {
+                const file = excelFile.files[0];
+                if (!file) {
+                    alert('Por favor, selecione um arquivo Excel para upload.');
+                    return;
+                }
+                
+                showLoading();
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Assume the first sheet is the one we want
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convert to JSON
+                        excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (excelData.length < 2) {
+                            throw new Error('O arquivo parece estar vazio ou não tem dados suficientes.');
+                        }
+                        
+                        // Process the data
+                        processExcelData();
+                        
+                        // Enable export button
+                        exportarBtn.disabled = false;
+                        
+                        // Mark data as loaded
+                        dataLoaded = true;
+                        
+                        // Switch to consulta page
+                        showPage(consultaPage);
+                        
+                    } catch (error) {
+                        hideLoading();
+                        alert('Erro ao processar o arquivo: ' + error.message);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    hideLoading();
+                    alert('Erro ao ler o arquivo.');
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+            
+            function processExcelData() {
+                try {
+                    if (excelData.length < 2) {
+                        throw new Error('Dados insuficientes no arquivo.');
+                    }
+                    
+                    // Get headers (assume first row is header)
+                    const headers = excelData[0];
+                    
+                    // Map header indexes
+                    const headerMap = {
+                        cidade: headers.findIndex(h => h && h.toString().toUpperCase().includes('CIDADE')),
+                        codVend: headers.findIndex(h => h && h.toString().toUpperCase().includes('COD_VEND')),
+                        vendedor: headers.findIndex(h => h && h.toString().toUpperCase().includes('VENDEDOR')),
+                        canal: headers.findIndex(h => h && h.toString().toUpperCase().includes('CANAL')),
+                        praca: headers.findIndex(h => h && h.toString().toUpperCase().includes('PRACA')),
+                        carregamento: headers.findIndex(h => h && h.toString().toUpperCase().includes('CARREGAMENTO')),
+                        filial: headers.findIndex(h => h && h.toString().toUpperCase().includes('FILIAL'))
+                    };
+                    
+                    // Check if all necessary columns exist
+                    for (const [key, value] of Object.entries(headerMap)) {
+                        if (value === -1) {
+                            throw new Error(`Coluna '${key}' não encontrada no arquivo.`);
+                        }
+                    }
+                    
+                    // Process data rows (skip header)
+                    const dataRows = excelData.slice(1);
+                    
+                    // Convert to objects with named properties
+                    const processedData = dataRows.map(row => {
+                        return {
+                            cidade: row[headerMap.cidade] || '',
+                            codVend: row[headerMap.codVend] || '',
+                            vendedor: row[headerMap.vendedor] || '',
+                            canal: row[headerMap.canal] || '',
+                            praca: row[headerMap.praca] || '',
+                            carregamento: row[headerMap.carregamento] || '',
+                            filial: row[headerMap.filial] || ''
+                        };
+                    });
+                    
+                    // Update excelData with processed data
+                    excelData = processedData;
+                    filteredData = [...excelData];
+                    
+                    // Populate filter dropdowns
+                    populateFilterOptions();
+                    
+                    // Display data
+                    displayData(filteredData);
+                    
+                    hideLoading();
+                    
+                } catch (error) {
+                    hideLoading();
+                    alert('Erro ao processar os dados: ' + error.message);
+                }
+            }
+            
+            function populateFilterOptions() {
+                // Get unique values for each filter
+                const uniqueValues = {
+                    cidade: [...new Set(excelData.map(item => item.cidade))].filter(Boolean).sort(),
+                    codVend: [...new Set(excelData.map(item => item.codVend))].filter(Boolean).sort((a, b) => a - b),
+                    vendedor: [...new Set(excelData.map(item => item.vendedor))].filter(Boolean).sort(),
+                    canal: [...new Set(excelData.map(item => item.canal))].filter(Boolean).sort(),
+                    praca: [...new Set(excelData.map(item => item.praca))].filter(Boolean).sort(),
+                    carregamento: [...new Set(excelData.map(item => item.carregamento))].filter(Boolean).sort(),
+                    filial: [...new Set(excelData.map(item => item.filial))].filter(Boolean).sort()
+                };
+                
+                // Clear and populate each filter dropdown
+                populateSelect(cidadeFilter, uniqueValues.cidade);
+                populateSelect(codVendFilter, uniqueValues.codVend);
+                populateSelect(vendedorFilter, uniqueValues.vendedor);
+                populateSelect(canalFilter, uniqueValues.canal);
+                populateSelect(pracaFilter, uniqueValues.praca);
+                populateSelect(carregamentoFilter, uniqueValues.carregamento);
+                populateSelect(filialFilter, uniqueValues.filial);
+            }
+            
+            function populateSelect(selectElement, options) {
+                // Clear current options except the first one
+                while (selectElement.options.length > 1) {
+                    selectElement.remove(1);
+                }
+                
+                // Add new options
+                options.forEach(option => {
+                    if (option) { // Skip empty values
+                        const opt = document.createElement('option');
+                        opt.value = option;
+                        opt.textContent = option;
+                        selectElement.appendChild(opt);
+                    }
+                });
+            }
+            
+            function displayData(data) {
+                // Update counter
+                contadorRegistros.textContent = `${data.length} registros`;
+                
+                // Clear table
+                tableBody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="7" class="text-center">Nenhum registro encontrado com os filtros aplicados.</td>';
+                    tableBody.appendChild(row);
+                    return;
+                }
+                
+                // Add rows to table
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.cidade || ''}</td>
+                        <td>${item.codVend || ''}</td>
+                        <td>${item.vendedor || ''}</td>
+                        <td>${item.canal || ''}</td>
+                        <td>${item.praca || ''}</td>
+                        <td>${item.carregamento || ''}</td>
+                        <td>${item.filial || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            function applyFilters() {
+                showLoading();
+                
+                const filters = {
+                    cidade: cidadeFilter.value,
+                    codVend: codVendFilter.value,
+                    vendedor: vendedorFilter.value,
+                    canal: canalFilter.value,
+                    praca: pracaFilter.value,
+                    carregamento: carregamentoFilter.value,
+                    filial: filialFilter.value
+                };
+                
+                // Filter data
+                filteredData = excelData.filter(item => {
+                    return (!filters.cidade || item.cidade == filters.cidade) &&
+                           (!filters.codVend || item.codVend == filters.codVend) &&
+                           (!filters.vendedor || item.vendedor == filters.vendedor) &&
+                           (!filters.canal || item.canal == filters.canal) &&
+                           (!filters.praca || item.praca == filters.praca) &&
+                           (!filters.carregamento || item.carregamento == filters.carregamento) &&
+                           (!filters.filial || item.filial == filters.filial);
+                });
+                
+                // Display filtered data
+                displayData(filteredData);
+                
+                hideLoading();
+            }
+            
+            function clearFilters() {
+                // Reset all dropdowns
+                cidadeFilter.value = '';
+                codVendFilter.value = '';
+                vendedorFilter.value = '';
+                canalFilter.value = '';
+                pracaFilter.value = '';
+                carregamentoFilter.value = '';
+                filialFilter.value = '';
+                
+                // Reset filtered data
+                filteredData = [...excelData];
+                
+                // Update display
+                displayData(filteredData);
+            }
+            
+            function exportToExcel() {
+                if (filteredData.length === 0) {
+                    alert('Não há dados para exportar.');
+                    return;
+                }
+                
+                try {
+                    // Create workbook and worksheet
+                    const wb = XLSX.utils.book_new();
+                    
+                    // Define headers
+                    const headers = ['CIDADE', 'COD_VEND', 'VENDEDOR', 'CANAL', 'PRACA', 'DIA DE CARREGAMENTO', 'FILIAL'];
+                    
+                    // Create array with headers and data
+                    const wsData = [headers];
+                    
+                    // Add data rows
+                    filteredData.forEach(item => {
+                        wsData.push([
+                            item.cidade,
+                            item.codVend,
+                            item.vendedor,
+                            item.canal,
+                            item.praca,
+                            item.carregamento,
+                            item.filial
+                        ]);
+                    });
+                    
+                    // Create worksheet
+                    const ws = XLSX.utils.aoa_to_sheet(wsData);
+                    
+                    // Add worksheet to workbook
+                    XLSX.utils.book_append_sheet(wb, ws, 'Dados Filtrados');
+                    
+                    // Generate download
+                    const fileName = 'dados_filtrados_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    XLSX.writeFile(wb, fileName);
+                    
+                } catch (error) {
+                    alert('Erro ao exportar para Excel: ' + error.message);
+                }
+            }
+            
+            function showLoading() {
+                loading.style.display = 'flex';
+            }
+            
+            function hideLoading() {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
