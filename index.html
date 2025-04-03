@@ -52,6 +52,25 @@
             font-weight: bold !important;
             background-color: #343a40 !important;
             color: white !important;
+            cursor: pointer;
+        }
+        .table thead th:hover {
+            background-color: #23272b !important;
+        }
+        .sort-icon {
+            margin-left: 5px;
+        }
+        .cities-summary {
+            margin-bottom: 20px;
+            display: none;
+        }
+        .cities-summary .card-header {
+            background-color: #6c757d;
+            color: white;
+        }
+        .cities-badge {
+            margin: 5px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -164,6 +183,16 @@
                 </div>
             </div>
 
+            <!-- Cities Summary -->
+            <div id="citiesSummary" class="cities-summary card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Cidades nos Resultados</h5>
+                </div>
+                <div class="card-body">
+                    <div id="citiesList" class="d-flex flex-wrap"></div>
+                </div>
+            </div>
+
             <!-- Data Table -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
@@ -180,13 +209,13 @@
                         <table id="dataTable" class="table table-striped table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th>CIDADE</th>
-                                    <th>COD_VEND</th>
-                                    <th>VENDEDOR</th>
-                                    <th>CANAL</th>
-                                    <th>PRACA</th>
-                                    <th>DIA DE CARREGAMENTO</th>
-                                    <th>FILIAL</th>
+                                    <th data-sort="cidade">CIDADE <span class="sort-icon"></span></th>
+                                    <th data-sort="codVend">COD_VEND <span class="sort-icon"></span></th>
+                                    <th data-sort="vendedor">VENDEDOR <span class="sort-icon"></span></th>
+                                    <th data-sort="canal">CANAL <span class="sort-icon"></span></th>
+                                    <th data-sort="praca">PRACA <span class="sort-icon"></span></th>
+                                    <th data-sort="carregamento">DIA DE CARREGAMENTO <span class="sort-icon"></span></th>
+                                    <th data-sort="filial">FILIAL <span class="sort-icon"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
@@ -224,6 +253,9 @@
             let excelData = [];
             let filteredData = [];
             let dataLoaded = false;
+            let currentSortColumn = '';
+            let currentSortDirection = 'asc';
+            let filtersApplied = false;
             
             // DOM elements - Pages
             const uploadPage = document.getElementById('uploadPage');
@@ -243,6 +275,8 @@
             const exportarBtn = document.getElementById('exportarBtn');
             const aplicarFiltroBtn = document.getElementById('aplicarFiltroBtn');
             const limparFiltrosBtn = document.getElementById('limparFiltrosBtn');
+            const citiesSummary = document.getElementById('citiesSummary');
+            const citiesList = document.getElementById('citiesList');
             
             // Filter elements
             const cidadeFilter = document.getElementById('cidadeFilter');
@@ -252,6 +286,9 @@
             const pracaFilter = document.getElementById('pracaFilter');
             const carregamentoFilter = document.getElementById('carregamentoFilter');
             const filialFilter = document.getElementById('filialFilter');
+            
+            // Get all table headers
+            const tableHeaders = document.querySelectorAll('th[data-sort]');
             
             // Event listeners - Navigation
             uploadNavLink.addEventListener('click', function(e) {
@@ -276,6 +313,14 @@
             aplicarFiltroBtn.addEventListener('click', applyFilters);
             limparFiltrosBtn.addEventListener('click', clearFilters);
             exportarBtn.addEventListener('click', exportToExcel);
+            
+            // Add click event to table headers for sorting
+            tableHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.getAttribute('data-sort');
+                    sortTable(column);
+                });
+            });
             
             // Functions - Navigation
             function showPage(page) {
@@ -461,7 +506,17 @@
                     const row = document.createElement('tr');
                     row.innerHTML = '<td colspan="7" class="text-center">Nenhum registro encontrado com os filtros aplicados.</td>';
                     tableBody.appendChild(row);
+                    
+                    // Hide cities summary if no data
+                    citiesSummary.style.display = 'none';
                     return;
+                }
+                
+                // Update cities summary if filters are applied
+                if (filtersApplied) {
+                    updateCitiesSummary(data);
+                } else {
+                    citiesSummary.style.display = 'none';
                 }
                 
                 // Add rows to table
@@ -478,6 +533,33 @@
                     `;
                     tableBody.appendChild(row);
                 });
+                
+                // Update sort icons
+                updateSortIcons();
+            }
+            
+            function updateCitiesSummary(data) {
+                // Get unique cities from filtered data
+                const uniqueCities = [...new Set(data.map(item => item.cidade))].filter(Boolean).sort();
+                
+                // Display cities summary only if there are cities
+                if (uniqueCities.length > 0) {
+                    citiesSummary.style.display = 'block';
+                    
+                    // Clear current cities list
+                    citiesList.innerHTML = '';
+                    
+                    // Add cities as badges
+                    uniqueCities.forEach(city => {
+                        const cityCount = data.filter(item => item.cidade === city).length;
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-secondary cities-badge';
+                        badge.innerHTML = `${city} <span class="badge bg-light text-dark">${cityCount}</span>`;
+                        citiesList.appendChild(badge);
+                    });
+                } else {
+                    citiesSummary.style.display = 'none';
+                }
             }
             
             function applyFilters() {
@@ -493,6 +575,9 @@
                     filial: filialFilter.value
                 };
                 
+                // Check if any filter is applied
+                filtersApplied = Object.values(filters).some(value => value !== '');
+                
                 // Filter data
                 filteredData = excelData.filter(item => {
                     return (!filters.cidade || item.cidade == filters.cidade) &&
@@ -503,6 +588,11 @@
                            (!filters.carregamento || item.carregamento == filters.carregamento) &&
                            (!filters.filial || item.filial == filters.filial);
                 });
+                
+                // Sort data if a sort is active
+                if (currentSortColumn) {
+                    sortData(filteredData, currentSortColumn, currentSortDirection);
+                }
                 
                 // Display filtered data
                 displayData(filteredData);
@@ -523,8 +613,74 @@
                 // Reset filtered data
                 filteredData = [...excelData];
                 
+                // Reset filters applied flag
+                filtersApplied = false;
+                
+                // Hide cities summary
+                citiesSummary.style.display = 'none';
+                
+                // Sort data if a sort is active
+                if (currentSortColumn) {
+                    sortData(filteredData, currentSortColumn, currentSortDirection);
+                }
+                
                 // Update display
                 displayData(filteredData);
+            }
+            
+            function sortTable(column) {
+                // Toggle sort direction if clicking the same column
+                if (column === currentSortColumn) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortDirection = 'asc';
+                }
+                
+                // Sort the data
+                sortData(filteredData, column, currentSortDirection);
+                
+                // Update the display
+                displayData(filteredData);
+            }
+            
+            function sortData(data, column, direction) {
+                // Sort the data
+                data.sort((a, b) => {
+                    // Handle numeric sorting for codVend
+                    if (column === 'codVend') {
+                        const aVal = parseInt(a[column]) || 0;
+                        const bVal = parseInt(b[column]) || 0;
+                        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+                    }
+                    
+                    // Default string sorting for other columns
+                    const aVal = a[column] || '';
+                    const bVal = b[column] || '';
+                    
+                    if (direction === 'asc') {
+                        return aVal.localeCompare(bVal);
+                    } else {
+                        return bVal.localeCompare(aVal);
+                    }
+                });
+            }
+            
+            function updateSortIcons() {
+                // Reset all icons
+                document.querySelectorAll('.sort-icon').forEach(icon => {
+                    icon.innerHTML = '';
+                });
+                
+                // Set icon for current sort column
+                if (currentSortColumn) {
+                    const headerElement = document.querySelector(`th[data-sort="${currentSortColumn}"] .sort-icon`);
+                    if (headerElement) {
+                        headerElement.innerHTML = currentSortDirection === 'asc' ? 
+                            '<i class="bi bi-sort-up"></i>' : 
+                            '<i class="bi bi-sort-down"></i>';
+                    }
+                }
             }
             
             function exportToExcel() {
