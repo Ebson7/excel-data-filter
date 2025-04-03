@@ -60,18 +60,15 @@
         .sort-icon {
             margin-left: 5px;
         }
-        .summary-section {
+        .cities-summary {
             margin-bottom: 20px;
             display: none;
         }
-        .summary-card {
-            height: 100%;
-        }
-        .summary-card .card-header {
+        .cities-summary .card-header {
             background-color: #6c757d;
             color: white;
         }
-        .summary-badge {
+        .cities-badge {
             margin: 5px;
             font-size: 0.9rem;
         }
@@ -186,32 +183,13 @@
                 </div>
             </div>
 
-            <!-- Summary Section (Cidades e Praças) -->
-            <div id="summarySection" class="summary-section">
-                <div class="row">
-                    <!-- Cities Summary -->
-                    <div class="col-md-6 mb-3">
-                        <div class="card summary-card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Cidades nos Resultados</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="citiesList" class="d-flex flex-wrap"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Praças Summary -->
-                    <div class="col-md-6 mb-3">
-                        <div class="card summary-card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-geo-fill"></i> Praças nos Resultados</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="pracasList" class="d-flex flex-wrap"></div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Cities Summary -->
+            <div id="citiesSummary" class="cities-summary card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Cidades nos Resultados</h5>
+                </div>
+                <div class="card-body">
+                    <div id="citiesList" class="d-flex flex-wrap"></div>
                 </div>
             </div>
 
@@ -297,9 +275,8 @@
             const exportarBtn = document.getElementById('exportarBtn');
             const aplicarFiltroBtn = document.getElementById('aplicarFiltroBtn');
             const limparFiltrosBtn = document.getElementById('limparFiltrosBtn');
-            const summarySection = document.getElementById('summarySection');
+            const citiesSummary = document.getElementById('citiesSummary');
             const citiesList = document.getElementById('citiesList');
-            const pracasList = document.getElementById('pracasList');
             
             // Filter elements
             const cidadeFilter = document.getElementById('cidadeFilter');
@@ -530,16 +507,16 @@
                     row.innerHTML = '<td colspan="7" class="text-center">Nenhum registro encontrado com os filtros aplicados.</td>';
                     tableBody.appendChild(row);
                     
-                    // Hide summary section if no data
-                    summarySection.style.display = 'none';
+                    // Hide cities summary if no data
+                    citiesSummary.style.display = 'none';
                     return;
                 }
                 
-                // Update summary section if filters are applied
+                // Update cities summary if filters are applied
                 if (filtersApplied) {
-                    updateSummarySection(data);
+                    updateCitiesSummary(data);
                 } else {
-                    summarySection.style.display = 'none';
+                    citiesSummary.style.display = 'none';
                 }
                 
                 // Add rows to table
@@ -561,44 +538,27 @@
                 updateSortIcons();
             }
             
-            function updateSummarySection(data) {
-                // Get unique cities and praças from filtered data
+            function updateCitiesSummary(data) {
+                // Get unique cities from filtered data
                 const uniqueCities = [...new Set(data.map(item => item.cidade))].filter(Boolean).sort();
-                const uniquePracas = [...new Set(data.map(item => item.praca))].filter(Boolean).sort();
                 
-                // Display summary section only if there are filters applied
-                if (filtersApplied && (uniqueCities.length > 0 || uniquePracas.length > 0)) {
-                    summarySection.style.display = 'block';
+                // Display cities summary only if there are cities
+                if (uniqueCities.length > 0) {
+                    citiesSummary.style.display = 'block';
                     
-                    // Update cities list
+                    // Clear current cities list
                     citiesList.innerHTML = '';
-                    if (uniqueCities.length > 0) {
-                        uniqueCities.forEach(city => {
-                            const cityCount = data.filter(item => item.cidade === city).length;
-                            const badge = document.createElement('span');
-                            badge.className = 'badge bg-secondary summary-badge';
-                            badge.innerHTML = `${city} <span class="badge bg-light text-dark">${cityCount}</span>`;
-                            citiesList.appendChild(badge);
-                        });
-                    } else {
-                        citiesList.innerHTML = '<p class="text-muted mb-0">Nenhuma cidade nos resultados.</p>';
-                    }
                     
-                    // Update praças list
-                    pracasList.innerHTML = '';
-                    if (uniquePracas.length > 0) {
-                        uniquePracas.forEach(praca => {
-                            const pracaCount = data.filter(item => item.praca === praca).length;
-                            const badge = document.createElement('span');
-                            badge.className = 'badge bg-info summary-badge';
-                            badge.innerHTML = `${praca} <span class="badge bg-light text-dark">${pracaCount}</span>`;
-                            pracasList.appendChild(badge);
-                        });
-                    } else {
-                        pracasList.innerHTML = '<p class="text-muted mb-0">Nenhuma praça nos resultados.</p>';
-                    }
+                    // Add cities as badges
+                    uniqueCities.forEach(city => {
+                        const cityCount = data.filter(item => item.cidade === city).length;
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-secondary cities-badge';
+                        badge.innerHTML = `${city} <span class="badge bg-light text-dark">${cityCount}</span>`;
+                        citiesList.appendChild(badge);
+                    });
                 } else {
-                    summarySection.style.display = 'none';
+                    citiesSummary.style.display = 'none';
                 }
             }
             
@@ -656,8 +616,8 @@
                 // Reset filters applied flag
                 filtersApplied = false;
                 
-                // Hide summary section
-                summarySection.style.display = 'none';
+                // Hide cities summary
+                citiesSummary.style.display = 'none';
                 
                 // Sort data if a sort is active
                 if (currentSortColumn) {
@@ -730,3 +690,51 @@
                 }
                 
                 try {
+                    // Create workbook and worksheet
+                    const wb = XLSX.utils.book_new();
+                    
+                    // Define headers
+                    const headers = ['CIDADE', 'COD_VEND', 'VENDEDOR', 'CANAL', 'PRACA', 'DIA DE CARREGAMENTO', 'FILIAL'];
+                    
+                    // Create array with headers and data
+                    const wsData = [headers];
+                    
+                    // Add data rows
+                    filteredData.forEach(item => {
+                        wsData.push([
+                            item.cidade,
+                            item.codVend,
+                            item.vendedor,
+                            item.canal,
+                            item.praca,
+                            item.carregamento,
+                            item.filial
+                        ]);
+                    });
+                    
+                    // Create worksheet
+                    const ws = XLSX.utils.aoa_to_sheet(wsData);
+                    
+                    // Add worksheet to workbook
+                    XLSX.utils.book_append_sheet(wb, ws, 'Dados Filtrados');
+                    
+                    // Generate download
+                    const fileName = 'dados_filtrados_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+                    XLSX.writeFile(wb, fileName);
+                    
+                } catch (error) {
+                    alert('Erro ao exportar para Excel: ' + error.message);
+                }
+            }
+            
+            function showLoading() {
+                loading.style.display = 'flex';
+            }
+            
+            function hideLoading() {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
